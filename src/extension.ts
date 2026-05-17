@@ -62,11 +62,15 @@ export function activate(context: vscode.ExtensionContext): void {
         const engine = gameManager.selectGame(selected.detail);
         if (engine) {
           sidebarProvider.refresh();
-          sidebarProvider.postMessage({
+          FullscreenPanel.currentPanel?.refresh();
+          const runtimeMessage = {
             type: "gameSelected",
             id: engine.id,
             name: engine.name,
-          });
+            autoPlay: gameManager.isAutoPlayEnabled(),
+          };
+          sidebarProvider.postMessage(runtimeMessage);
+          FullscreenPanel.currentPanel?.postMessage(runtimeMessage);
           await vscode.commands.executeCommand("workbench.view.explorer");
           await vscode.commands.executeCommand(`${VIEW_IDS.SIDEBAR}.focus`);
           vscode.window.showInformationMessage(
@@ -102,10 +106,12 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
       }
       const enabled = gameManager.toggleAutoPlay();
-      sidebarProvider.postMessage({
+      const message = {
         type: "autoPlayChanged",
         enabled,
-      });
+      };
+      sidebarProvider.postMessage(message);
+      FullscreenPanel.currentPanel?.postMessage(message);
       vscode.window.showInformationMessage(
         `VSArcade: Auto-play ${enabled ? "enabled" : "disabled"}`
       );

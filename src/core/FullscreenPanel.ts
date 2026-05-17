@@ -4,7 +4,10 @@
 
 import * as vscode from "vscode";
 import { GameManager } from "./GameManager";
-import { generateWebviewHtml } from "./ArcadeViewProvider";
+import {
+  createWebviewRuntimeState,
+  generateWebviewHtml,
+} from "./ArcadeViewProvider";
 
 export class FullscreenPanel {
   public static currentPanel: FullscreenPanel | undefined;
@@ -71,31 +74,37 @@ export class FullscreenPanel {
     this._panel.webview.postMessage(message);
   }
 
+  public refresh(): void {
+    this._update();
+  }
+
   private _update(): void {
-    const activeGameId = this._gameManager.getActiveGameId();
     this._panel.webview.html = generateWebviewHtml(
       this._panel.webview,
       this._extensionUri,
-      activeGameId
+      createWebviewRuntimeState(this._gameManager)
     );
   }
 
   private _handleMessage(msg: { type: string; [key: string]: unknown }): void {
     switch (msg.type) {
       case "webviewReady":
-        break;
-      case "keyDown":
-        this._gameManager.getActiveGame()?.handleInput(msg.key as string, true);
-        break;
-      case "keyUp":
-        this._gameManager.getActiveGame()?.handleInput(msg.key as string, false);
+        this.postMessage({
+          type: "syncState",
+          ...createWebviewRuntimeState(this._gameManager),
+        });
         break;
       case "togglePause":
-        this._gameManager.togglePause();
+        this.postMessage({
+          type: "pauseChanged",
+          paused: this._gameManager.togglePause(),
+        });
         break;
-      case "toggleAutoPlay":
-        this._gameManager.toggleAutoPlay();
+      case "toggleAutoPlay": {
+        const autoPlay = this._gameManager.toggleAutoPlay();
+        this.postMessage({ type: "autoPlayChanged", enabled: autoPlay });
         break;
+      }
       case "toggleFullscreen":
         // Close fullscreen panel
         this._panel.dispose();

@@ -3,7 +3,6 @@
 // ---------------------------------------------------------------
 
 import type { IGameEngine, GameOptions } from "../types/game";
-import { GAME_IDS } from "../constants";
 
 export class GameManager {
   private games: Map<string, IGameEngine> = new Map();
@@ -27,6 +26,7 @@ export class GameManager {
     const engine = this.games.get(id);
     if (engine) {
       this.activeGameId = id;
+      this.paused = false;
     }
     return engine;
   }
@@ -67,6 +67,16 @@ export class GameManager {
   /** Set the visual theme. */
   setTheme(theme: "dark" | "light"): void {
     this.theme = theme;
+  }
+
+  /** Whether the active game is paused. */
+  isPaused(): boolean {
+    return this.paused;
+  }
+
+  /** Whether auto-play is enabled. */
+  isAutoPlayEnabled(): boolean {
+    return this.autoPlay;
   }
 
   /** Get current theme. */
