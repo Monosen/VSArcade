@@ -1,0 +1,83 @@
+{
+  "name": "vsarcade",
+  "displayName": "VSArcade",
+  "description": "Game Boy style arcade games inside VS Code",
+  "version": "0.0.1",
+  "publisher": "monosen",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:vsarcade.sidebar"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vsarcade",
+          "title": "VSArcade",
+          "icon": "media/arcade-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "vsarcade": [
+        {
+          "id": "vsarcade.sidebar",
+          "name": "VSArcade"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "vsarcade.selectGame",
+        "title": "Select Game",
+        "category": "VSArcade"
+      },
+      {
+        "command": "vsarcade.toggleFullscreen",
+        "title": "Toggle Fullscreen",
+        "category": "VSArcade"
+      },
+      {
+        "command": "vsarcade.toggleAutoPlay",
+        "title": "Toggle Auto Play",
+        "category": "VSArcade"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "vsarcade.selectGame"
+        },
+        {
+          "command": "vsarcade.toggleFullscreen"
+        },
+        {
+          "command": "vsarcade.toggleAutoPlay"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "vsarcade.sidebar",
+        "contents": "No game selected. Use 'Select Game' to pick a game and start playing!\n[Select Game](command:vsarcade.selectGame)"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "node esbuild.js --production",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.74.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  }
+}
