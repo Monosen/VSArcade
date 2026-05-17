@@ -26,6 +26,10 @@ body {
   overflow: hidden;
 }
 
+body.vsarcade-fullscreen {
+  padding: 20px;
+}
+
 .game-container {
   display: flex;
   flex-direction: column;
@@ -33,6 +37,17 @@ body {
   gap: 8px;
   padding: 8px;
   width: 100%;
+}
+
+.game-container-sidebar {
+  max-width: 320px;
+}
+
+.game-container-fullscreen {
+  max-width: min(92vw, 1100px);
+  height: calc(100vh - 40px);
+  justify-content: center;
+  gap: 16px;
 }
 
 .game-header {
@@ -61,12 +76,25 @@ body {
   image-rendering: crisp-edges;
   border: 1px solid var(--vsarcade-border);
   background-color: #0f0f23;
+  width: min(100%, 320px);
+  height: auto;
+  aspect-ratio: 10 / 9;
+}
+
+body.vsarcade-fullscreen #gameCanvas {
+  width: min(90vw, 960px);
+  max-height: 72vh;
 }
 
 .game-controls {
   display: flex;
   gap: 8px;
   margin-top: 8px;
+}
+
+body.vsarcade-fullscreen .game-controls {
+  gap: 12px;
+  margin-top: 0;
 }
 
 .game-controls button {
@@ -79,6 +107,11 @@ body {
   font-size: 12px;
   font-family: inherit;
   transition: background-color 0.15s;
+}
+
+body.vsarcade-fullscreen .game-controls button {
+  padding: 10px 22px;
+  font-size: 14px;
 }
 
 .game-controls button:hover {

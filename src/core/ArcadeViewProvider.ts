@@ -28,7 +28,8 @@ export function createWebviewRuntimeState(
 export function generateWebviewHtml(
   webview: vscode.Webview,
   extensionUri: vscode.Uri,
-  runtimeState: WebviewRuntimeState
+  runtimeState: WebviewRuntimeState,
+  displayMode: "sidebar" | "fullscreen" = "sidebar"
 ): string {
   const cssUri = webview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, "media", "main.css")
@@ -46,8 +47,8 @@ export function generateWebviewHtml(
   <link rel="stylesheet" href="${cssUri}" />
   <title>VSArcade</title>
 </head>
-<body>
-  <div class="game-container">
+<body class="vsarcade-${displayMode}">
+  <div class="game-container game-container-${displayMode}">
     <div class="game-header">
       <span class="game-title" id="gameTitle">${runtimeState.gameName ?? "VSArcade"}</span>
       <span class="game-score" id="gameScore">Score: 0</span>

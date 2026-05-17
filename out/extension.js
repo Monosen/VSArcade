@@ -147,7 +147,7 @@ function createWebviewRuntimeState(gameManager2) {
     autoPlay: gameManager2.isAutoPlayEnabled()
   };
 }
-function generateWebviewHtml(webview, extensionUri, runtimeState) {
+function generateWebviewHtml(webview, extensionUri, runtimeState, displayMode = "sidebar") {
   const cssUri = webview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, "media", "main.css")
   );
@@ -165,8 +165,8 @@ function generateWebviewHtml(webview, extensionUri, runtimeState) {
   <link rel="stylesheet" href="${cssUri}" />
   <title>VSArcade</title>
 </head>
-<body>
-  <div class="game-container">
+<body class="vsarcade-${displayMode}">
+  <div class="game-container game-container-${displayMode}">
     <div class="game-header">
       <span class="game-title" id="gameTitle">${runtimeState.gameName ?? "VSArcade"}</span>
       <span class="game-score" id="gameScore">Score: 0</span>
@@ -960,7 +960,8 @@ var _FullscreenPanel = class _FullscreenPanel {
     this._panel.webview.html = generateWebviewHtml(
       this._panel.webview,
       this._extensionUri,
-      createWebviewRuntimeState(this._gameManager)
+      createWebviewRuntimeState(this._gameManager),
+      "fullscreen"
     );
   }
   _handleMessage(msg) {

@@ -82,7 +82,8 @@ export class FullscreenPanel {
     this._panel.webview.html = generateWebviewHtml(
       this._panel.webview,
       this._extensionUri,
-      createWebviewRuntimeState(this._gameManager)
+      createWebviewRuntimeState(this._gameManager),
+      "fullscreen"
     );
   }
 
