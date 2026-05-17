@@ -581,7 +581,7 @@ function generateWebviewHtml(webview, extensionUri, runtimeState, displayMode = 
       }
 
       autoPlayAccumulator += deltaTime;
-      if (autoPlayAccumulator < 90) {
+      if (autoPlayAccumulator < 180) {
         return;
       }
       autoPlayAccumulator = 0;
@@ -713,7 +713,7 @@ function generateWebviewHtml(webview, extensionUri, runtimeState, displayMode = 
         dropAccumulator += deltaTime;
         runAutoPlay(deltaTime);
 
-        const dropInterval = autoPlayEnabled ? 220 : 500;
+        const dropInterval = autoPlayEnabled ? 420 : 500;
         if (dropAccumulator >= dropInterval) {
           dropAccumulator = 0;
           movePiece(0, 1);
