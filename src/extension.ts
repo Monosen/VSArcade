@@ -61,11 +61,14 @@ export function activate(context: vscode.ExtensionContext): void {
       if (selected) {
         const engine = gameManager.selectGame(selected.detail);
         if (engine) {
+          sidebarProvider.refresh();
           sidebarProvider.postMessage({
             type: "gameSelected",
             id: engine.id,
             name: engine.name,
           });
+          await vscode.commands.executeCommand("workbench.view.explorer");
+          await vscode.commands.executeCommand(`${VIEW_IDS.SIDEBAR}.focus`);
           vscode.window.showInformationMessage(
             `VSArcade: Now playing ${engine.name}`
           );

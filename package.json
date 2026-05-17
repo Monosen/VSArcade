@@ -11,21 +11,13 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:vsarcade.sidebar"
+    "onView:vsarcade.sidebar",
+    "onCommand:vsarcade.selectGame"
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "vsarcade",
-          "title": "VSArcade",
-          "icon": "media/arcade-icon.svg"
-        }
-      ]
-    },
     "views": {
-      "vsarcade": [
+      "explorer": [
         {
           "id": "vsarcade.sidebar",
           "name": "VSArcade"
@@ -61,13 +53,7 @@
           "command": "vsarcade.toggleAutoPlay"
         }
       ]
-    },
-    "viewsWelcome": [
-      {
-        "view": "vsarcade.sidebar",
-        "contents": "No game selected. Use 'Select Game' to pick a game and start playing!\n[Select Game](command:vsarcade.selectGame)"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "node esbuild.js --production",

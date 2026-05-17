@@ -130,7 +130,7 @@ var GameManager = class {
 
 // src/core/ArcadeViewProvider.ts
 var vscode = __toESM(require("vscode"));
-function generateWebviewHtml(webview, extensionUri, _gameId) {
+function generateWebviewHtml(webview, extensionUri, gameName) {
   const cssUri = webview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, "media", "main.css")
   );
@@ -151,7 +151,7 @@ function generateWebviewHtml(webview, extensionUri, _gameId) {
 <body>
   <div class="game-container">
     <div class="game-header">
-      <span class="game-title" id="gameTitle">${_gameId ? _gameId.toUpperCase() : "VSArcade"}</span>
+      <span class="game-title" id="gameTitle">${gameName ?? "VSArcade"}</span>
       <span class="game-score" id="gameScore">Score: 0</span>
     </div>
     <canvas id="gameCanvas" width="160" height="144"></canvas>
@@ -164,19 +164,14 @@ function generateWebviewHtml(webview, extensionUri, _gameId) {
 
   <script>
     const vscodeApi = acquireVsCodeApi();
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // Theme detection
-    function getCurrentTheme() {
-      return document.body.classList.contains('vscode-dark') ||
-        window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-    }
+    const hasSelectedGame = ${gameName !== null ? "true" : "false"};
 
     // Input handling \u2014 forward keyboard events to the extension host
     document.addEventListener('keydown', (e) => {
+      if (!hasSelectedGame) {
+        return;
+      }
+
       vscodeApi.postMessage({ type: 'keyDown', key: e.key, code: e.code });
       // Prevent default for game keys so the editor doesn't steal them
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
@@ -185,15 +180,27 @@ function generateWebviewHtml(webview, extensionUri, _gameId) {
     });
 
     document.addEventListener('keyup', (e) => {
+      if (!hasSelectedGame) {
+        return;
+      }
+
       vscodeApi.postMessage({ type: 'keyUp', key: e.key, code: e.code });
     });
 
     // Button handlers
     document.getElementById('btnPause')?.addEventListener('click', () => {
+      if (!hasSelectedGame) {
+        return;
+      }
+
       vscodeApi.postMessage({ type: 'togglePause' });
     });
 
     document.getElementById('btnAutoPlay')?.addEventListener('click', () => {
+      if (!hasSelectedGame) {
+        return;
+      }
+
       vscodeApi.postMessage({ type: 'toggleAutoPlay' });
     });
 
@@ -244,16 +251,18 @@ var ArcadeViewProvider = class {
   }
   /** Resolve the sidebar webview view. */
   resolveWebviewView(webviewView, _context, _token) {
+    var _a;
     this._view = webviewView;
     webviewView.webview.options = {
       enableScripts: true,
       localResourceRoots: [this._extensionUri]
     };
-    const activeGameId = this._gameManager.getActiveGameId();
+    this._syncViewState();
+    const activeGameName = ((_a = this._gameManager.getActiveGame()) == null ? void 0 : _a.name) ?? null;
     webviewView.webview.html = generateWebviewHtml(
       webviewView.webview,
       this._extensionUri,
-      activeGameId
+      activeGameName
     );
     this._disposables.push(
       webviewView.webview.onDidReceiveMessage((msg) => {
@@ -268,14 +277,24 @@ var ArcadeViewProvider = class {
   }
   /** Refresh the webview HTML (e.g., after selecting a new game). */
   refresh() {
+    var _a;
     if (this._view) {
-      const activeGameId = this._gameManager.getActiveGameId();
+      this._syncViewState();
+      const activeGameName = ((_a = this._gameManager.getActiveGame()) == null ? void 0 : _a.name) ?? null;
       this._view.webview.html = generateWebviewHtml(
         this._view.webview,
         this._extensionUri,
-        activeGameId
+        activeGameName
       );
     }
+  }
+  _syncViewState() {
+    if (!this._view) {
+      return;
+    }
+    const activeGame = this._gameManager.getActiveGame();
+    this._view.title = (activeGame == null ? void 0 : activeGame.name) ?? "VSArcade";
+    this._view.description = activeGame ? "Ready" : "Select from Command Palette";
   }
   _handleMessage(msg) {
     var _a, _b;
@@ -289,11 +308,9 @@ var ArcadeViewProvider = class {
         (_b = this._gameManager.getActiveGame()) == null ? void 0 : _b.handleInput(msg.key, false);
         break;
       case "togglePause":
-        this._gameManager.togglePause();
         this.postMessage({
           type: "pauseChanged",
-          paused: true
-          // GameManager toggles internally; reflect new state
+          paused: this._gameManager.togglePause()
         });
         break;
       case "toggleAutoPlay":
@@ -571,11 +588,14 @@ function activate(context) {
       if (selected) {
         const engine = gameManager.selectGame(selected.detail);
         if (engine) {
+          sidebarProvider.refresh();
           sidebarProvider.postMessage({
             type: "gameSelected",
             id: engine.id,
             name: engine.name
           });
+          await vscode4.commands.executeCommand("workbench.view.explorer");
+          await vscode4.commands.executeCommand(`${VIEW_IDS.SIDEBAR}.focus`);
           vscode4.window.showInformationMessage(
             `VSArcade: Now playing ${engine.name}`
           );

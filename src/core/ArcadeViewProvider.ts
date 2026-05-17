@@ -12,7 +12,7 @@ import { COMMAND_IDS } from "../constants";
 export function generateWebviewHtml(
   webview: vscode.Webview,
   extensionUri: vscode.Uri,
-  _gameId: string | null
+  gameName: string | null
 ): string {
   const cssUri = webview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, "media", "main.css")
@@ -33,9 +33,7 @@ export function generateWebviewHtml(
 <body>
   <div class="game-container">
     <div class="game-header">
-      <span class="game-title" id="gameTitle">${
-        _gameId ? _gameId.toUpperCase() : "VSArcade"
-      }</span>
+      <span class="game-title" id="gameTitle">${gameName ?? "VSArcade"}</span>
       <span class="game-score" id="gameScore">Score: 0</span>
     </div>
     <canvas id="gameCanvas" width="160" height="144"></canvas>
@@ -48,19 +46,14 @@ export function generateWebviewHtml(
 
   <script>
     const vscodeApi = acquireVsCodeApi();
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // Theme detection
-    function getCurrentTheme() {
-      return document.body.classList.contains('vscode-dark') ||
-        window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-    }
+    const hasSelectedGame = ${gameName !== null ? "true" : "false"};
 
     // Input handling — forward keyboard events to the extension host
     document.addEventListener('keydown', (e) => {
+      if (!hasSelectedGame) {
+        return;
+      }
+
       vscodeApi.postMessage({ type: 'keyDown', key: e.key, code: e.code });
       // Prevent default for game keys so the editor doesn't steal them
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
@@ -69,15 +62,27 @@ export function generateWebviewHtml(
     });
 
     document.addEventListener('keyup', (e) => {
+      if (!hasSelectedGame) {
+        return;
+      }
+
       vscodeApi.postMessage({ type: 'keyUp', key: e.key, code: e.code });
     });
 
     // Button handlers
     document.getElementById('btnPause')?.addEventListener('click', () => {
+      if (!hasSelectedGame) {
+        return;
+      }
+
       vscodeApi.postMessage({ type: 'togglePause' });
     });
 
     document.getElementById('btnAutoPlay')?.addEventListener('click', () => {
+      if (!hasSelectedGame) {
+        return;
+      }
+
       vscodeApi.postMessage({ type: 'toggleAutoPlay' });
     });
 
@@ -144,11 +149,13 @@ export class ArcadeViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri],
     };
 
-    const activeGameId = this._gameManager.getActiveGameId();
+    this._syncViewState();
+
+    const activeGameName = this._gameManager.getActiveGame()?.name ?? null;
     webviewView.webview.html = generateWebviewHtml(
       webviewView.webview,
       this._extensionUri,
-      activeGameId
+      activeGameName
     );
 
     this._disposables.push(
@@ -166,13 +173,25 @@ export class ArcadeViewProvider implements vscode.WebviewViewProvider {
   /** Refresh the webview HTML (e.g., after selecting a new game). */
   public refresh(): void {
     if (this._view) {
-      const activeGameId = this._gameManager.getActiveGameId();
+      this._syncViewState();
+
+      const activeGameName = this._gameManager.getActiveGame()?.name ?? null;
       this._view.webview.html = generateWebviewHtml(
         this._view.webview,
         this._extensionUri,
-        activeGameId
+        activeGameName
       );
     }
+  }
+
+  private _syncViewState(): void {
+    if (!this._view) {
+      return;
+    }
+
+    const activeGame = this._gameManager.getActiveGame();
+    this._view.title = activeGame?.name ?? "VSArcade";
+    this._view.description = activeGame ? "Ready" : "Select from Command Palette";
   }
 
   private _handleMessage(msg: { type: string; [key: string]: unknown }): void {
@@ -187,10 +206,9 @@ export class ArcadeViewProvider implements vscode.WebviewViewProvider {
         this._gameManager.getActiveGame()?.handleInput(msg.key as string, false);
         break;
       case "togglePause":
-        this._gameManager.togglePause();
         this.postMessage({
           type: "pauseChanged",
-          paused: true, // GameManager toggles internally; reflect new state
+          paused: this._gameManager.togglePause(),
         });
         break;
       case "toggleAutoPlay":
