@@ -20,7 +20,8 @@
       "explorer": [
         {
           "id": "vsarcade.sidebar",
-          "name": "VSArcade"
+          "name": "VSArcade",
+          "type": "webview"
         }
       ]
     },
