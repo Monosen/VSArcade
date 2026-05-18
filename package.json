@@ -4,11 +4,30 @@
   "description": "Game Boy style arcade games inside VS Code",
   "version": "0.0.1",
   "publisher": "monosen",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Monosen/VSArcade.git"
+  },
+  "homepage": "https://github.com/Monosen/VSArcade/blob/master/README.md",
+  "bugs": {
+    "url": "https://github.com/Monosen/VSArcade/issues"
+  },
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.74.0"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "vscode",
+    "arcade",
+    "gameboy",
+    "retro",
+    "tetris",
+    "falling-blocks",
+    "webview"
   ],
   "activationEvents": [
     "onView:vsarcade.sidebar",

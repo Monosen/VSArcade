@@ -1,0 +1,11 @@
+.git/**
+.gitignore
+.atl/**
+.vscode/**
+node_modules/**
+src/**
+SPEC.md
+esbuild.js
+tsconfig.json
+pnpm-lock.yaml
+out/**/*.map
