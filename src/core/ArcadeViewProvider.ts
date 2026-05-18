@@ -3,22 +3,36 @@
 // ---------------------------------------------------------------
 
 import * as vscode from "vscode";
-import { GameManager } from "./GameManager";
+import {
+  GameManager,
+  RuntimeSnapshot,
+  RuntimeSurface,
+} from "./GameManager";
 import { COMMAND_IDS } from "../constants";
 
 export interface WebviewRuntimeState {
   gameName: string | null;
   paused: boolean;
   autoPlay: boolean;
+  controlled: boolean;
+  snapshot: RuntimeSnapshot | null;
 }
 
+export type RuntimeSyncHandler = (
+  source: RuntimeSurface,
+  snapshot: RuntimeSnapshot
+) => void;
+
 export function createWebviewRuntimeState(
-  gameManager: GameManager
+  gameManager: GameManager,
+  surface: RuntimeSurface
 ): WebviewRuntimeState {
   return {
     gameName: gameManager.getActiveGame()?.name ?? null,
     paused: gameManager.isPaused(),
     autoPlay: gameManager.isAutoPlayEnabled(),
+    controlled: gameManager.getActiveSurface() === surface,
+    snapshot: gameManager.getRuntimeSnapshot(),
   };
 }
 
@@ -131,6 +145,42 @@ export function generateWebviewHtml(
       ]
     };
     const SCORE_TABLE = { 1: 100, 2: 300, 3: 500, 4: 800 };
+    const PIXEL_FONT = {
+      ' ': ['00000','00000','00000','00000','00000'],
+      '+': ['00000','00100','01110','00100','00000'],
+      ':': ['00000','00100','00000','00100','00000'],
+      '0': ['01110','10001','10001','10001','01110'],
+      '1': ['00100','01100','00100','00100','01110'],
+      '2': ['01110','10001','00010','00100','11111'],
+      '3': ['11110','00001','01110','00001','11110'],
+      '4': ['10010','10010','11111','00010','00010'],
+      '5': ['11111','10000','11110','00001','11110'],
+      '6': ['01110','10000','11110','10001','01110'],
+      '7': ['11111','00010','00100','01000','01000'],
+      '8': ['01110','10001','01110','10001','01110'],
+      '9': ['01110','10001','01111','00001','01110'],
+      'A': ['01110','10001','11111','10001','10001'],
+      'C': ['01111','10000','10000','10000','01111'],
+      'D': ['11110','10001','10001','10001','11110'],
+      'E': ['11111','10000','11110','10000','11111'],
+      'F': ['11111','10000','11110','10000','10000'],
+      'G': ['01111','10000','10011','10001','01110'],
+      'H': ['10001','10001','11111','10001','10001'],
+      'I': ['11111','00100','00100','00100','11111'],
+      'L': ['10000','10000','10000','10000','11111'],
+      'M': ['10001','11011','10101','10001','10001'],
+      'N': ['10001','11001','10101','10011','10001'],
+      'O': ['01110','10001','10001','10001','01110'],
+      'P': ['11110','10001','11110','10000','10000'],
+      'R': ['11110','10001','11110','10010','10001'],
+      'S': ['01111','10000','01110','00001','11110'],
+      'T': ['11111','00100','00100','00100','00100'],
+      'U': ['10001','10001','10001','10001','01110'],
+      'V': ['10001','10001','10001','01010','00100'],
+      'W': ['10001','10001','10101','11011','10001'],
+      'X': ['10001','01010','00100','01010','10001'],
+      'Y': ['10001','01010','00100','00100','00100']
+    };
 
     let board = [];
     let currentPiece = null;
@@ -144,6 +194,7 @@ export function generateWebviewHtml(
     let hasSelectedGame = Boolean(initialState.gameName);
     let isPaused = initialState.paused;
     let autoPlayEnabled = initialState.autoPlay;
+    let isController = initialState.controlled;
     let activePlan = null;
 
     function createEmptyBoard() {
@@ -155,6 +206,74 @@ export function generateWebviewHtml(
     function updateScore(nextScore) {
       score = nextScore;
       scoreEl.textContent = 'Score: ' + score;
+    }
+
+    function drawPixelText(text, x, y, scale, color) {
+      const glyphScale = scale ?? 2;
+      const glyphColor = color ?? '#f2f2f2';
+      const upperText = String(text).toUpperCase();
+      let cursorX = x;
+
+      ctx.fillStyle = glyphColor;
+
+      for (const char of upperText) {
+        const glyph = PIXEL_FONT[char] || PIXEL_FONT[' '];
+        for (let row = 0; row < glyph.length; row += 1) {
+          for (let col = 0; col < glyph[row].length; col += 1) {
+            if (glyph[row][col] !== '1') {
+              continue;
+            }
+
+            ctx.fillRect(
+              cursorX + col * glyphScale,
+              y + row * glyphScale,
+              glyphScale,
+              glyphScale
+            );
+          }
+        }
+
+        cursorX += 6 * glyphScale;
+      }
+    }
+
+    function measurePixelText(text, scale) {
+      const glyphScale = scale ?? 2;
+      return String(text).length * 6 * glyphScale;
+    }
+
+    function wrapPixelText(text, maxWidth, scale) {
+      const words = String(text).toUpperCase().split(/\s+/).filter(Boolean);
+      const lines = [];
+      let currentLine = '';
+
+      for (const word of words) {
+        const candidate = currentLine ? currentLine + ' ' + word : word;
+        if (!currentLine || measurePixelText(candidate, scale) <= maxWidth) {
+          currentLine = candidate;
+          continue;
+        }
+
+        lines.push(currentLine);
+        currentLine = word;
+      }
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      return lines;
+    }
+
+    function drawCenteredPixelLines(lines, startY, scale, color, maxWidth) {
+      const glyphScale = scale ?? 2;
+      const lineHeight = 7 * glyphScale;
+
+      lines.forEach((line, index) => {
+        const lineWidth = measurePixelText(line, glyphScale);
+        const x = Math.max(Math.floor((maxWidth - lineWidth) / 2), 8);
+        drawPixelText(line, x, startY + index * lineHeight, glyphScale, color);
+      });
     }
 
     function setPauseState(paused) {
@@ -170,6 +289,43 @@ export function generateWebviewHtml(
     function setButtonsEnabled(enabled) {
       pauseButton.disabled = !enabled;
       autoPlayButton.disabled = !enabled;
+    }
+
+    function setController(controlled) {
+      isController = controlled;
+      setButtonsEnabled(hasSelectedGame && isController);
+    }
+
+    function buildSnapshot() {
+      return {
+        board: board.map((row) => row.slice()),
+        currentPiece: currentPiece ? { ...currentPiece } : null,
+        nextPieceType,
+        score,
+        gameOver
+      };
+    }
+
+    function syncSnapshot() {
+      if (!hasSelectedGame || !isController) {
+        return;
+      }
+
+      vscodeApi.postMessage({ type: 'stateSync', snapshot: buildSnapshot() });
+    }
+
+    function applySnapshot(snapshot) {
+      if (!snapshot) {
+        return;
+      }
+
+      board = snapshot.board.map((row) => row.slice());
+      currentPiece = snapshot.currentPiece ? { ...snapshot.currentPiece } : null;
+      nextPieceType = snapshot.nextPieceType;
+      gameOver = Boolean(snapshot.gameOver);
+      updateScore(snapshot.score ?? 0);
+      activePlan = autoPlayEnabled && currentPiece ? computeAutoPlan() : null;
+      render();
     }
 
     function randomPieceType() {
@@ -268,12 +424,13 @@ export function generateWebviewHtml(
       updateScore(0);
       spawnPiece();
       render();
+      syncSnapshot();
     }
 
     function startSelectedGame(gameName) {
       hasSelectedGame = Boolean(gameName);
       titleEl.textContent = gameName || 'VSArcade';
-      setButtonsEnabled(hasSelectedGame);
+      setButtonsEnabled(hasSelectedGame && isController);
 
       if (!hasSelectedGame) {
         board = createEmptyBoard();
@@ -283,6 +440,11 @@ export function generateWebviewHtml(
         gameOver = false;
         updateScore(0);
         render();
+        return;
+      }
+
+      if (initialState.snapshot && initialState.gameName === gameName) {
+        applySnapshot(initialState.snapshot);
         return;
       }
 
@@ -298,6 +460,7 @@ export function generateWebviewHtml(
       if (collides(currentPiece, 0, 0)) {
         gameOver = true;
         setPauseState(true);
+        syncSnapshot();
       }
     }
 
@@ -309,6 +472,7 @@ export function generateWebviewHtml(
       const nextRotation = (currentPiece.rotation + 1) % 4;
       if (!collides(currentPiece, 0, 0, nextRotation)) {
         currentPiece.rotation = nextRotation;
+        syncSnapshot();
       }
     }
 
@@ -320,6 +484,7 @@ export function generateWebviewHtml(
       if (!collides(currentPiece, dx, dy)) {
         currentPiece.x += dx;
         currentPiece.y += dy;
+        syncSnapshot();
         return true;
       }
 
@@ -348,6 +513,7 @@ export function generateWebviewHtml(
       mergePiece(currentPiece);
       clearLines();
       spawnPiece();
+      syncSnapshot();
     }
 
     function cloneBoard(sourceBoard) {
@@ -458,7 +624,7 @@ export function generateWebviewHtml(
     }
 
     function runAutoPlay(deltaTime) {
-      if (!autoPlayEnabled || !currentPiece || !activePlan || isPaused || gameOver) {
+      if (!isController || !autoPlayEnabled || !currentPiece || !activePlan || isPaused || gameOver) {
         return;
       }
 
@@ -529,14 +695,25 @@ export function generateWebviewHtml(
     }
 
     function renderHud() {
-      ctx.fillStyle = '#cccccc';
-      ctx.font = '8px monospace';
-      ctx.fillText('NEXT', 96, 24);
-      ctx.fillText('MOVE', 96, 84);
-      ctx.fillText(autoPlayEnabled ? 'AUTO' : 'MANUAL', 96, 94);
+      const hudRight = canvas.width - 8;
+      const nextLabel = 'NEXT';
+      const modeLine1 = 'MOVE';
+      const modeLine2 = autoPlayEnabled ? 'AUTO' : 'MANUAL';
+      const nextLabelX = hudRight - measurePixelText(nextLabel, 2);
+      const modeLine1X = hudRight - measurePixelText(modeLine1, 2);
+      const modeLine2X = hudRight - measurePixelText(modeLine2, 2);
+
+      drawPixelText(nextLabel, nextLabelX, 18, 2, '#d8d2ea');
+      drawPixelText(modeLine1, modeLine1X, 78, 2, '#d8d2ea');
+      drawPixelText(modeLine2, modeLine2X, 90, 2, '#d8d2ea');
 
       if (nextPieceType) {
         const shape = PIECES[nextPieceType][0];
+        const previewWidth = shape[0].length * CELL_SIZE;
+        const previewX = Math.max(
+          BOARD_OFFSET_X + BOARD_WIDTH * CELL_SIZE + 6,
+          hudRight - previewWidth - 18
+        );
         for (let y = 0; y < shape.length; y += 1) {
           for (let x = 0; x < shape[y].length; x += 1) {
             if (!shape[y][x]) {
@@ -544,7 +721,7 @@ export function generateWebviewHtml(
             }
 
             ctx.fillStyle = PIECE_COLORS[nextPieceType];
-            ctx.fillRect(96 + x * CELL_SIZE, 30 + y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+            ctx.fillRect(previewX + x * CELL_SIZE, 30 + y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
           }
         }
       }
@@ -553,14 +730,23 @@ export function generateWebviewHtml(
     function renderOverlay(message, hint) {
       ctx.fillStyle = 'rgba(10, 10, 18, 0.82)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#f5f5f5';
-      ctx.font = '10px monospace';
-      ctx.fillText(message, 24, 64);
-      ctx.font = '8px monospace';
-      ctx.fillText(hint, 24, 80);
+      const messageLines = wrapPixelText(message, canvas.width - 16, 2);
+      const hintLines = wrapPixelText(hint, canvas.width - 16, 1);
+      const totalHeight = messageLines.length * 14 + hintLines.length * 7 + 6;
+      const startY = Math.max(Math.floor((canvas.height - totalHeight) / 2), 16);
+
+      drawCenteredPixelLines(messageLines, startY, 2, '#f5f5f5', canvas.width);
+      drawCenteredPixelLines(
+        hintLines,
+        startY + messageLines.length * 14 + 6,
+        1,
+        '#d8d2ea',
+        canvas.width
+      );
     }
 
     function render() {
+      ctx.imageSmoothingEnabled = false;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#17122b';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -591,7 +777,7 @@ export function generateWebviewHtml(
       const deltaTime = Math.min(frameTime - lastFrameTime, 50);
       lastFrameTime = frameTime;
 
-      if (hasSelectedGame && !isPaused && !gameOver) {
+      if (isController && hasSelectedGame && !isPaused && !gameOver) {
         dropAccumulator += deltaTime;
         runAutoPlay(deltaTime);
 
@@ -607,7 +793,7 @@ export function generateWebviewHtml(
     }
 
     document.addEventListener('keydown', (event) => {
-      if (!hasSelectedGame) {
+      if (!hasSelectedGame || !isController) {
         return;
       }
 
@@ -645,7 +831,7 @@ export function generateWebviewHtml(
     });
 
     pauseButton.addEventListener('click', () => {
-      if (!hasSelectedGame) {
+      if (!hasSelectedGame || !isController) {
         return;
       }
 
@@ -653,7 +839,7 @@ export function generateWebviewHtml(
     });
 
     autoPlayButton.addEventListener('click', () => {
-      if (!hasSelectedGame) {
+      if (!hasSelectedGame || !isController) {
         return;
       }
 
@@ -670,6 +856,7 @@ export function generateWebviewHtml(
         case 'gameSelected':
           setPauseState(false);
           setAutoPlayState(Boolean(msg.autoPlay));
+          initialState.snapshot = null;
           startSelectedGame(msg.name || null);
           break;
         case 'scoreUpdate':
@@ -686,18 +873,27 @@ export function generateWebviewHtml(
           break;
         case 'syncState':
           titleEl.textContent = msg.gameName || 'VSArcade';
+          initialState.snapshot = msg.snapshot || null;
           if (msg.gameName && !hasSelectedGame) {
             startSelectedGame(msg.gameName);
           }
           setPauseState(Boolean(msg.paused));
           setAutoPlayState(Boolean(msg.autoPlay));
+          setController(Boolean(msg.controlled));
+          applySnapshot(msg.snapshot || null);
+          break;
+        case 'applySnapshot':
+          applySnapshot(msg.snapshot || null);
+          break;
+        case 'controlChanged':
+          setController(Boolean(msg.controlled));
           break;
       }
     });
 
     setPauseState(isPaused);
     setAutoPlayState(autoPlayEnabled);
-    setButtonsEnabled(hasSelectedGame);
+    setController(isController);
     startSelectedGame(initialState.gameName);
     render();
     animationFrameId = window.requestAnimationFrame(tick);
@@ -717,7 +913,8 @@ export class ArcadeViewProvider implements vscode.WebviewViewProvider {
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
-    private readonly _gameManager: GameManager
+    private readonly _gameManager: GameManager,
+    private readonly _onRuntimeSync: RuntimeSyncHandler
   ) {}
 
   /** Resolve the sidebar webview view. */
@@ -737,7 +934,7 @@ export class ArcadeViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.html = generateWebviewHtml(
       webviewView.webview,
       this._extensionUri,
-      createWebviewRuntimeState(this._gameManager)
+      createWebviewRuntimeState(this._gameManager, "sidebar")
     );
 
     this._disposables.push(
@@ -761,7 +958,7 @@ export class ArcadeViewProvider implements vscode.WebviewViewProvider {
       this._view.webview.html = generateWebviewHtml(
         this._view.webview,
         this._extensionUri,
-        createWebviewRuntimeState(this._gameManager)
+        createWebviewRuntimeState(this._gameManager, "sidebar")
       );
     }
   }
@@ -781,8 +978,11 @@ export class ArcadeViewProvider implements vscode.WebviewViewProvider {
       case "webviewReady":
         this.postMessage({
           type: "syncState",
-          ...createWebviewRuntimeState(this._gameManager),
+          ...createWebviewRuntimeState(this._gameManager, "sidebar"),
         });
+        break;
+      case "stateSync":
+        this._onRuntimeSync("sidebar", msg.snapshot as RuntimeSnapshot);
         break;
       case "togglePause":
         this.postMessage({

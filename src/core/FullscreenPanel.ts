@@ -3,10 +3,11 @@
 // ---------------------------------------------------------------
 
 import * as vscode from "vscode";
-import { GameManager } from "./GameManager";
+import { GameManager, RuntimeSnapshot } from "./GameManager";
 import {
   createWebviewRuntimeState,
   generateWebviewHtml,
+  RuntimeSyncHandler,
 } from "./ArcadeViewProvider";
 
 export class FullscreenPanel {
@@ -16,12 +17,17 @@ export class FullscreenPanel {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionUri: vscode.Uri;
   private readonly _gameManager: GameManager;
+  private readonly _onRuntimeSync: RuntimeSyncHandler;
+  private readonly _onPanelClosed: () => void;
   private _disposables: vscode.Disposable[] = [];
+  private _isDisposing = false;
 
   /** Create or reveal the fullscreen panel. */
   public static createOrShow(
     extensionUri: vscode.Uri,
-    gameManager: GameManager
+    gameManager: GameManager,
+    onRuntimeSync: RuntimeSyncHandler,
+    onPanelClosed: () => void
   ): FullscreenPanel {
     if (FullscreenPanel.currentPanel) {
       FullscreenPanel.currentPanel._panel.reveal(vscode.ViewColumn.One);
@@ -42,7 +48,9 @@ export class FullscreenPanel {
     FullscreenPanel.currentPanel = new FullscreenPanel(
       panel,
       extensionUri,
-      gameManager
+      gameManager,
+      onRuntimeSync,
+      onPanelClosed
     );
     return FullscreenPanel.currentPanel;
   }
@@ -50,11 +58,15 @@ export class FullscreenPanel {
   private constructor(
     panel: vscode.WebviewPanel,
     extensionUri: vscode.Uri,
-    gameManager: GameManager
+    gameManager: GameManager,
+    onRuntimeSync: RuntimeSyncHandler,
+    onPanelClosed: () => void
   ) {
     this._panel = panel;
     this._extensionUri = extensionUri;
     this._gameManager = gameManager;
+    this._onRuntimeSync = onRuntimeSync;
+    this._onPanelClosed = onPanelClosed;
 
     this._update();
 
@@ -82,7 +94,7 @@ export class FullscreenPanel {
     this._panel.webview.html = generateWebviewHtml(
       this._panel.webview,
       this._extensionUri,
-      createWebviewRuntimeState(this._gameManager),
+      createWebviewRuntimeState(this._gameManager, "fullscreen"),
       "fullscreen"
     );
   }
@@ -92,8 +104,11 @@ export class FullscreenPanel {
       case "webviewReady":
         this.postMessage({
           type: "syncState",
-          ...createWebviewRuntimeState(this._gameManager),
+          ...createWebviewRuntimeState(this._gameManager, "fullscreen"),
         });
+        break;
+      case "stateSync":
+        this._onRuntimeSync("fullscreen", msg.snapshot as RuntimeSnapshot);
         break;
       case "togglePause":
         this.postMessage({
@@ -114,8 +129,14 @@ export class FullscreenPanel {
   }
 
   public dispose(): void {
+    if (this._isDisposing) {
+      return;
+    }
+
+    this._isDisposing = true;
     FullscreenPanel.currentPanel = undefined;
-    this._panel.dispose();
+    this._onPanelClosed();
     this._disposables.forEach((d) => d.dispose());
+    this._panel.dispose();
   }
 }

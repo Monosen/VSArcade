@@ -4,7 +4,7 @@
 
 import * as vscode from "vscode";
 import { COMMAND_IDS, VIEW_IDS, GAME_IDS } from "./constants";
-import { GameManager } from "./core/GameManager";
+import { GameManager, RuntimeSnapshot } from "./core/GameManager";
 import { ArcadeViewProvider } from "./core/ArcadeViewProvider";
 import { FullscreenPanel } from "./core/FullscreenPanel";
 import { InputHandler } from "./input/InputHandler";
@@ -29,7 +29,42 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   // --- Sidebar View Provider ---
-  sidebarProvider = new ArcadeViewProvider(context.extensionUri, gameManager);
+  const syncRuntimeSnapshot = (
+    source: "sidebar" | "fullscreen",
+    snapshot: RuntimeSnapshot
+  ): void => {
+    gameManager.setRuntimeSnapshot(snapshot);
+
+    const targetMessage = {
+      type: "applySnapshot",
+      snapshot,
+    };
+
+    if (source === "sidebar") {
+      FullscreenPanel.currentPanel?.postMessage(targetMessage);
+      return;
+    }
+
+    sidebarProvider.postMessage(targetMessage);
+  };
+
+  const syncControlTargets = (): void => {
+    sidebarProvider.postMessage({
+      type: "controlChanged",
+      controlled: gameManager.getActiveSurface() === "sidebar",
+    });
+
+    FullscreenPanel.currentPanel?.postMessage({
+      type: "controlChanged",
+      controlled: gameManager.getActiveSurface() === "fullscreen",
+    });
+  };
+
+  sidebarProvider = new ArcadeViewProvider(
+    context.extensionUri,
+    gameManager,
+    syncRuntimeSnapshot
+  );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       VIEW_IDS.SIDEBAR,
@@ -61,6 +96,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (selected) {
         const engine = gameManager.selectGame(selected.detail);
         if (engine) {
+          gameManager.setActiveSurface("sidebar");
           sidebarProvider.refresh();
           FullscreenPanel.currentPanel?.refresh();
           const runtimeMessage = {
@@ -71,6 +107,7 @@ export function activate(context: vscode.ExtensionContext): void {
           };
           sidebarProvider.postMessage(runtimeMessage);
           FullscreenPanel.currentPanel?.postMessage(runtimeMessage);
+          syncControlTargets();
           await vscode.commands.executeCommand("workbench.view.explorer");
           await vscode.commands.executeCommand(`${VIEW_IDS.SIDEBAR}.focus`);
           vscode.window.showInformationMessage(
@@ -91,7 +128,17 @@ export function activate(context: vscode.ExtensionContext): void {
         );
         return;
       }
-      FullscreenPanel.createOrShow(context.extensionUri, gameManager);
+      gameManager.setActiveSurface("fullscreen");
+      FullscreenPanel.createOrShow(
+        context.extensionUri,
+        gameManager,
+        syncRuntimeSnapshot,
+        () => {
+          gameManager.setActiveSurface("sidebar");
+          syncControlTargets();
+        }
+      );
+      syncControlTargets();
     }
   );
 
