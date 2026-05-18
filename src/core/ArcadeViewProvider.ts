@@ -243,7 +243,7 @@ export function generateWebviewHtml(
     }
 
     function wrapPixelText(text, maxWidth, scale) {
-      const words = String(text).toUpperCase().split(/\s+/).filter(Boolean);
+      const words = String(text).toUpperCase().split(/\\s+/).filter(Boolean);
       const lines = [];
       let currentLine = '';
 
@@ -695,13 +695,16 @@ export function generateWebviewHtml(
     }
 
     function renderHud() {
+      const hudLeft = BOARD_OFFSET_X + BOARD_WIDTH * CELL_SIZE + 8;
       const hudRight = canvas.width - 8;
+      const hudWidth = hudRight - hudLeft;
+      const hudCenterX = hudLeft + Math.floor(hudWidth / 2);
       const nextLabel = 'NEXT';
       const modeLine1 = 'MOVE';
       const modeLine2 = autoPlayEnabled ? 'AUTO' : 'MANUAL';
-      const nextLabelX = hudRight - measurePixelText(nextLabel, 2);
-      const modeLine1X = hudRight - measurePixelText(modeLine1, 2);
-      const modeLine2X = hudRight - measurePixelText(modeLine2, 2);
+      const nextLabelX = hudCenterX - Math.floor(measurePixelText(nextLabel, 2) / 2);
+      const modeLine1X = hudCenterX - Math.floor(measurePixelText(modeLine1, 2) / 2);
+      const modeLine2X = hudCenterX - Math.floor(measurePixelText(modeLine2, 2) / 2);
 
       drawPixelText(nextLabel, nextLabelX, 18, 2, '#d8d2ea');
       drawPixelText(modeLine1, modeLine1X, 78, 2, '#d8d2ea');
@@ -710,10 +713,8 @@ export function generateWebviewHtml(
       if (nextPieceType) {
         const shape = PIECES[nextPieceType][0];
         const previewWidth = shape[0].length * CELL_SIZE;
-        const previewX = Math.max(
-          BOARD_OFFSET_X + BOARD_WIDTH * CELL_SIZE + 6,
-          hudRight - previewWidth - 18
-        );
+        const previewX = hudCenterX - Math.floor(previewWidth / 2);
+        const previewY = 38;
         for (let y = 0; y < shape.length; y += 1) {
           for (let x = 0; x < shape[y].length; x += 1) {
             if (!shape[y][x]) {
@@ -721,7 +722,7 @@ export function generateWebviewHtml(
             }
 
             ctx.fillStyle = PIECE_COLORS[nextPieceType];
-            ctx.fillRect(previewX + x * CELL_SIZE, 30 + y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+            ctx.fillRect(previewX + x * CELL_SIZE, previewY + y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
           }
         }
       }
