@@ -3,27 +3,43 @@ const esbuild = require("esbuild");
 const production = process.argv.includes("--production");
 const watch = process.argv.includes("--watch");
 
+const shared = {
+  bundle: true,
+  minify: production,
+  sourcemap: !production,
+  sourcesContent: false,
+  logLevel: "info",
+};
+
 async function main() {
-  const ctx = await esbuild.context({
+  const hostCtx = await esbuild.context({
+    ...shared,
     entryPoints: ["src/extension.ts"],
-    bundle: true,
     format: "cjs",
-    minify: production,
-    sourcemap: !production,
-    sourcesContent: false,
     outdir: "./out",
     external: ["vscode"],
-    logLevel: "info",
     platform: "node",
     target: "node16",
   });
 
+  const webviewCtx = await esbuild.context({
+    ...shared,
+    entryPoints: {
+      "webview/runtime": "src/webview/runtime.ts",
+      "games/tetris": "src/games/tetris/webview.ts",
+    },
+    format: "iife",
+    outdir: "./out",
+    platform: "browser",
+    target: "es2020",
+  });
+
   if (watch) {
-    await ctx.watch();
+    await Promise.all([hostCtx.watch(), webviewCtx.watch()]);
     console.log("watching for changes...");
   } else {
-    await ctx.rebuild();
-    await ctx.dispose();
+    await Promise.all([hostCtx.rebuild(), webviewCtx.rebuild()]);
+    await Promise.all([hostCtx.dispose(), webviewCtx.dispose()]);
   }
 }
 

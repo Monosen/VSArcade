@@ -1,50 +1,35 @@
-// ---------------------------------------------------------------
-// VSArcade — Extension Entry Point
-// ---------------------------------------------------------------
+// VSArcade — Extension entry point
 
 import * as vscode from "vscode";
-import { COMMAND_IDS, VIEW_IDS, GAME_IDS } from "./constants";
+import { COMMAND_IDS, VIEW_IDS } from "./constants";
 import { GameManager, RuntimeSnapshot } from "./core/GameManager";
 import { ArcadeViewProvider } from "./core/ArcadeViewProvider";
 import { FullscreenPanel } from "./core/FullscreenPanel";
-import { InputHandler } from "./input/InputHandler";
-import { TetrisGame } from "./games/tetris/TetrisGame";
+import { tetrisDescriptor } from "./games/tetris/descriptor";
 
 let gameManager: GameManager;
 let sidebarProvider: ArcadeViewProvider;
-let inputHandler: InputHandler;
 
 export function activate(context: vscode.ExtensionContext): void {
-  // --- Game Manager ---
   gameManager = new GameManager();
+  gameManager.registerGame(tetrisDescriptor);
 
-  // Register the Tetris game engine
-  const tetris = new TetrisGame();
-  gameManager.registerGame(tetris);
-
-  // --- Theme detection ---
   const currentTheme = vscode.window.activeColorTheme;
   gameManager.setTheme(
-    currentTheme.kind === vscode.ColorThemeKind.Dark ? "dark" : "light"
+    currentTheme.kind === vscode.ColorThemeKind.Dark ? "dark" : "light",
   );
 
-  // --- Sidebar View Provider ---
   const syncRuntimeSnapshot = (
     source: "sidebar" | "fullscreen",
-    snapshot: RuntimeSnapshot
+    snapshot: RuntimeSnapshot,
   ): void => {
     gameManager.setRuntimeSnapshot(snapshot);
 
-    const targetMessage = {
-      type: "applySnapshot",
-      snapshot,
-    };
-
+    const targetMessage = { type: "applySnapshot", snapshot };
     if (source === "sidebar") {
       FullscreenPanel.currentPanel?.postMessage(targetMessage);
       return;
     }
-
     sidebarProvider.postMessage(targetMessage);
   };
 
@@ -53,7 +38,6 @@ export function activate(context: vscode.ExtensionContext): void {
       type: "controlChanged",
       controlled: gameManager.getActiveSurface() === "sidebar",
     });
-
     FullscreenPanel.currentPanel?.postMessage({
       type: "controlChanged",
       controlled: gameManager.getActiveSurface() === "fullscreen",
@@ -63,21 +47,16 @@ export function activate(context: vscode.ExtensionContext): void {
   sidebarProvider = new ArcadeViewProvider(
     context.extensionUri,
     gameManager,
-    syncRuntimeSnapshot
+    syncRuntimeSnapshot,
   );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       VIEW_IDS.SIDEBAR,
       sidebarProvider,
-      { webviewOptions: { retainContextWhenHidden: true } }
-    )
+      { webviewOptions: { retainContextWhenHidden: true } },
+    ),
   );
 
-  // --- Input Handler ---
-  inputHandler = new InputHandler(gameManager);
-  inputHandler.registerCommands(context);
-
-  // --- Commands ---
   const selectGameCommand = vscode.commands.registerCommand(
     COMMAND_IDS.SELECT_GAME,
     async () => {
@@ -93,29 +72,33 @@ export function activate(context: vscode.ExtensionContext): void {
         title: "VSArcade — Select Game",
       });
 
-      if (selected) {
-        const engine = gameManager.selectGame(selected.detail);
-        if (engine) {
-          gameManager.setActiveSurface("sidebar");
-          sidebarProvider.refresh();
-          FullscreenPanel.currentPanel?.refresh();
-          const runtimeMessage = {
-            type: "gameSelected",
-            id: engine.id,
-            name: engine.name,
-            autoPlay: gameManager.isAutoPlayEnabled(),
-          };
-          sidebarProvider.postMessage(runtimeMessage);
-          FullscreenPanel.currentPanel?.postMessage(runtimeMessage);
-          syncControlTargets();
-          await vscode.commands.executeCommand("workbench.view.explorer");
-          await vscode.commands.executeCommand(`${VIEW_IDS.SIDEBAR}.focus`);
-          vscode.window.showInformationMessage(
-            `VSArcade: Now playing ${engine.name}`
-          );
-        }
+      if (!selected) {
+        return;
       }
-    }
+
+      const descriptor = gameManager.selectGame(selected.detail);
+      if (!descriptor) {
+        return;
+      }
+
+      gameManager.setActiveSurface("sidebar");
+      sidebarProvider.refresh();
+      FullscreenPanel.currentPanel?.refresh();
+      const runtimeMessage = {
+        type: "gameSelected",
+        id: descriptor.id,
+        name: descriptor.name,
+        autoPlay: gameManager.isAutoPlayEnabled(),
+      };
+      sidebarProvider.postMessage(runtimeMessage);
+      FullscreenPanel.currentPanel?.postMessage(runtimeMessage);
+      syncControlTargets();
+      await vscode.commands.executeCommand("workbench.view.explorer");
+      await vscode.commands.executeCommand(`${VIEW_IDS.SIDEBAR}.focus`);
+      vscode.window.showInformationMessage(
+        `VSArcade: Now playing ${descriptor.name}`,
+      );
+    },
   );
 
   const toggleFullscreenCommand = vscode.commands.registerCommand(
@@ -124,7 +107,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const activeGame = gameManager.getActiveGame();
       if (!activeGame) {
         vscode.window.showWarningMessage(
-          "VSArcade: No game selected. Use 'Select Game' first."
+          "VSArcade: No game selected. Use 'Select Game' first.",
         );
         return;
       }
@@ -136,10 +119,10 @@ export function activate(context: vscode.ExtensionContext): void {
         () => {
           gameManager.setActiveSurface("sidebar");
           syncControlTargets();
-        }
+        },
       );
       syncControlTargets();
-    }
+    },
   );
 
   const toggleAutoPlayCommand = vscode.commands.registerCommand(
@@ -148,30 +131,26 @@ export function activate(context: vscode.ExtensionContext): void {
       const activeGame = gameManager.getActiveGame();
       if (!activeGame) {
         vscode.window.showWarningMessage(
-          "VSArcade: No game selected. Use 'Select Game' first."
+          "VSArcade: No game selected. Use 'Select Game' first.",
         );
         return;
       }
       const enabled = gameManager.toggleAutoPlay();
-      const message = {
-        type: "autoPlayChanged",
-        enabled,
-      };
+      const message = { type: "autoPlayChanged", enabled };
       sidebarProvider.postMessage(message);
       FullscreenPanel.currentPanel?.postMessage(message);
       vscode.window.showInformationMessage(
-        `VSArcade: Auto-play ${enabled ? "enabled" : "disabled"}`
+        `VSArcade: Auto-play ${enabled ? "enabled" : "disabled"}`,
       );
-    }
+    },
   );
 
-  // Listen for theme changes
   const themeChangeListener = vscode.window.onDidChangeActiveColorTheme(
     (theme) => {
       gameManager.setTheme(
-        theme.kind === vscode.ColorThemeKind.Dark ? "dark" : "light"
+        theme.kind === vscode.ColorThemeKind.Dark ? "dark" : "light",
       );
-    }
+    },
   );
 
   context.subscriptions.push(
@@ -180,7 +159,6 @@ export function activate(context: vscode.ExtensionContext): void {
     toggleAutoPlayCommand,
     themeChangeListener,
     sidebarProvider,
-    inputHandler
   );
 }
 

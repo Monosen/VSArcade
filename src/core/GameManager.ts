@@ -1,21 +1,12 @@
-// ---------------------------------------------------------------
-// VSArcade — Game Manager
-// ---------------------------------------------------------------
+// VSArcade — Host coordinator (does not execute game logic)
 
-import type { IGameEngine, GameOptions } from "../types/game";
+import type { IGameDescriptor } from "../types/game";
 
-export interface RuntimeSnapshot {
-  board: (string | null)[][];
-  currentPiece: { type: string; rotation: number; x: number; y: number } | null;
-  nextPieceType: string | null;
-  score: number;
-  gameOver: boolean;
-}
-
+export type RuntimeSnapshot = unknown;
 export type RuntimeSurface = "sidebar" | "fullscreen";
 
 export class GameManager {
-  private games: Map<string, IGameEngine> = new Map();
+  private games: Map<string, IGameDescriptor> = new Map();
   private activeGameId: string | null = null;
   private autoPlay = false;
   private paused = false;
@@ -23,74 +14,60 @@ export class GameManager {
   private runtimeSnapshot: RuntimeSnapshot | null = null;
   private activeSurface: RuntimeSurface = "sidebar";
 
-  /** Register a game engine so it can be selected. */
-  registerGame(engine: IGameEngine): void {
-    this.games.set(engine.id, engine);
+  registerGame(descriptor: IGameDescriptor): void {
+    this.games.set(descriptor.id, descriptor);
   }
 
-  /** Get all registered game engines. */
-  getRegisteredGames(): IGameEngine[] {
+  getRegisteredGames(): IGameDescriptor[] {
     return Array.from(this.games.values());
   }
 
-  /** Select a game by its id. Returns the engine or undefined. */
-  selectGame(id: string): IGameEngine | undefined {
-    const engine = this.games.get(id);
-    if (engine) {
+  selectGame(id: string): IGameDescriptor | undefined {
+    const descriptor = this.games.get(id);
+    if (descriptor) {
       this.activeGameId = id;
       this.paused = false;
       this.runtimeSnapshot = null;
       this.activeSurface = "sidebar";
     }
-    return engine;
+    return descriptor;
   }
 
-  /** Get the currently active game engine, if any. */
-  getActiveGame(): IGameEngine | undefined {
+  getActiveGame(): IGameDescriptor | undefined {
     if (this.activeGameId === null) {
       return undefined;
     }
     return this.games.get(this.activeGameId);
   }
 
-  /** Get the id of the currently active game. */
   getActiveGameId(): string | null {
     return this.activeGameId;
   }
 
-  /** Toggle auto-play on the active game. Returns new state. */
   toggleAutoPlay(): boolean {
     this.autoPlay = !this.autoPlay;
-    const engine = this.getActiveGame();
-    if (engine) {
-      engine.setAutoPlay(this.autoPlay);
-    }
     return this.autoPlay;
   }
 
-  /** Toggle pause on the active game. Returns new state. */
   togglePause(): boolean {
     this.paused = !this.paused;
-    const engine = this.getActiveGame();
-    if (engine) {
-      engine.setPaused(this.paused);
-    }
     return this.paused;
   }
 
-  /** Set the visual theme. */
   setTheme(theme: "dark" | "light"): void {
     this.theme = theme;
   }
 
-  /** Whether the active game is paused. */
   isPaused(): boolean {
     return this.paused;
   }
 
-  /** Whether auto-play is enabled. */
   isAutoPlayEnabled(): boolean {
     return this.autoPlay;
+  }
+
+  getTheme(): "dark" | "light" {
+    return this.theme;
   }
 
   getRuntimeSnapshot(): RuntimeSnapshot | null {
@@ -109,24 +86,7 @@ export class GameManager {
     this.activeSurface = surface;
   }
 
-  /** Get current theme. */
-  getTheme(): "dark" | "light" {
-    return this.theme;
-  }
-
-  /** Create GameOptions based on current manager state. */
-  createOptions(): GameOptions {
-    return {
-      autoPlay: this.autoPlay,
-      theme: this.theme,
-    };
-  }
-
-  /** Dispose all game engines. */
   dispose(): void {
-    for (const engine of this.games.values()) {
-      engine.dispose();
-    }
     this.games.clear();
     this.activeGameId = null;
     this.runtimeSnapshot = null;
