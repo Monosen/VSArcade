@@ -14,6 +14,8 @@ export const VIEW_IDS = {
 
 export const GAME_IDS = {
   TETRIS: "tetris",
+  SNAKE: "snake",
+  TWOS: "twos",
 } as const;
 
 /** Fixed classic Game Boy–style colors for game pieces.

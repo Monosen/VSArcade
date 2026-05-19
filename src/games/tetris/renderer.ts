@@ -9,42 +9,12 @@ import {
   PIECES,
 } from "./constants";
 import { PIECE_COLORS } from "./types";
-import type { PieceType, PlacedPiece } from "./types";
+import type { PieceType } from "./types";
 import type { TetrisEngine } from "./engine";
 import { shapeOf } from "./engine";
-import { PIXEL_FONT } from "../../webview/pixel-font";
+import { drawPixelText, measurePixelText } from "../../webview/text";
 
 const HUD_TEXT_COLOR = "#d8d2ea";
-
-function measurePixelText(text: string, scale: number): number {
-  return String(text).length * 6 * scale;
-}
-
-function drawPixelText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  scale: number,
-  color: string,
-): void {
-  const upper = String(text).toUpperCase();
-  ctx.fillStyle = color;
-  let cursorX = x;
-  for (const char of upper) {
-    const glyph = PIXEL_FONT[char] ?? PIXEL_FONT[" "];
-    for (let row = 0; row < glyph.length; row += 1) {
-      const line = glyph[row];
-      for (let col = 0; col < line.length; col += 1) {
-        if (line[col] !== "1") {
-          continue;
-        }
-        ctx.fillRect(cursorX + col * scale, y + row * scale, scale, scale);
-      }
-    }
-    cursorX += 6 * scale;
-  }
-}
 
 export class TetrisRenderer {
   constructor(private readonly ctx: CanvasRenderingContext2D, private readonly canvas: HTMLCanvasElement) {}

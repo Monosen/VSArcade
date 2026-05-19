@@ -27,6 +27,8 @@ async function main() {
     entryPoints: {
       "webview/runtime": "src/webview/runtime.ts",
       "games/tetris": "src/games/tetris/webview.ts",
+      "games/snake": "src/games/snake/webview.ts",
+      "games/twos": "src/games/twos/webview.ts",
     },
     format: "iife",
     outdir: "./out",

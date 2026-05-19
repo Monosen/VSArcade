@@ -6,6 +6,8 @@ import { GameManager, RuntimeSnapshot } from "./core/GameManager";
 import { ArcadeViewProvider } from "./core/ArcadeViewProvider";
 import { FullscreenPanel } from "./core/FullscreenPanel";
 import { tetrisDescriptor } from "./games/tetris/descriptor";
+import { snakeDescriptor } from "./games/snake/descriptor";
+import { twosDescriptor } from "./games/twos/descriptor";
 
 let gameManager: GameManager;
 let sidebarProvider: ArcadeViewProvider;
@@ -13,6 +15,8 @@ let sidebarProvider: ArcadeViewProvider;
 export function activate(context: vscode.ExtensionContext): void {
   gameManager = new GameManager();
   gameManager.registerGame(tetrisDescriptor);
+  gameManager.registerGame(snakeDescriptor);
+  gameManager.registerGame(twosDescriptor);
 
   const currentTheme = vscode.window.activeColorTheme;
   gameManager.setTheme(
