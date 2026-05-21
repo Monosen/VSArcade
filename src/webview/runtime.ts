@@ -63,6 +63,7 @@ class Runtime {
   private autoPlayEnabled: boolean;
   private rafId = 0;
   private lastFrameTime = 0;
+  private readonly heldKeys = new Set<string>();
 
   constructor() {
     this.canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
@@ -126,6 +127,7 @@ class Runtime {
       isController: () => this.isController,
       isPaused: () => this.isPaused,
       isAutoPlayEnabled: () => this.autoPlayEnabled,
+      isKeyDown: (key: string) => this.heldKeys.has(key),
       setScore: (score: number) => {
         this.scoreEl.textContent = `Score: ${score}`;
       },
@@ -154,15 +156,17 @@ class Runtime {
   }
 
   private attachKeyboard(): void {
+    const handled = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Enter"];
+
     document.addEventListener("keydown", (event) => {
       if (!this.hasSelectedGame || !this.isController || !this.game) {
         return;
       }
 
-      const handled = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Enter"];
       if (handled.includes(event.key)) {
         event.preventDefault();
       }
+      this.heldKeys.add(event.key);
 
       if (event.key === "Enter" && this.game.isGameOver()) {
         this.game.restart();
@@ -176,6 +180,12 @@ class Runtime {
 
       this.game.handleKey(event.key);
     });
+
+    document.addEventListener("keyup", (event) => {
+      this.heldKeys.delete(event.key);
+    });
+
+    window.addEventListener("blur", () => this.heldKeys.clear());
   }
 
   private attachMessageBus(): void {

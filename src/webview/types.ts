@@ -8,6 +8,7 @@ export interface GameApi {
   isController(): boolean;
   isPaused(): boolean;
   isAutoPlayEnabled(): boolean;
+  isKeyDown(key: string): boolean;
   setScore(score: number): void;
   syncSnapshot(): void;
 }
