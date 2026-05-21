@@ -4,7 +4,7 @@
   "description": "Game Boy style arcade games inside VS Code",
   "version": "0.0.1",
   "publisher": "monosen",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Monosen/VSArcade.git"
