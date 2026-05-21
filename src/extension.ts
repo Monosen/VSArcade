@@ -8,6 +8,13 @@ import { FullscreenPanel } from "./core/FullscreenPanel";
 import { tetrisDescriptor } from "./games/tetris/descriptor";
 import { snakeDescriptor } from "./games/snake/descriptor";
 import { twosDescriptor } from "./games/twos/descriptor";
+import { mineHuntDescriptor } from "./games/minehunt/descriptor";
+import { pongDescriptor } from "./games/pong/descriptor";
+import { brickoutDescriptor } from "./games/brickout/descriptor";
+import { skyhopDescriptor } from "./games/skyhop/descriptor";
+import { dotChaseDescriptor } from "./games/dotchase/descriptor";
+import { invadersDescriptor } from "./games/invaders/descriptor";
+import { duelDescriptor } from "./games/duel/descriptor";
 
 let gameManager: GameManager;
 let sidebarProvider: ArcadeViewProvider;
@@ -17,6 +24,13 @@ export function activate(context: vscode.ExtensionContext): void {
   gameManager.registerGame(tetrisDescriptor);
   gameManager.registerGame(snakeDescriptor);
   gameManager.registerGame(twosDescriptor);
+  gameManager.registerGame(mineHuntDescriptor);
+  gameManager.registerGame(pongDescriptor);
+  gameManager.registerGame(brickoutDescriptor);
+  gameManager.registerGame(skyhopDescriptor);
+  gameManager.registerGame(dotChaseDescriptor);
+  gameManager.registerGame(invadersDescriptor);
+  gameManager.registerGame(duelDescriptor);
 
   const currentTheme = vscode.window.activeColorTheme;
   gameManager.setTheme(

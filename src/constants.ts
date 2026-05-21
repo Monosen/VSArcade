@@ -16,6 +16,13 @@ export const GAME_IDS = {
   TETRIS: "tetris",
   SNAKE: "snake",
   TWOS: "twos",
+  MINEHUNT: "minehunt",
+  PONG: "pong",
+  BRICKOUT: "brickout",
+  SKYHOP: "skyhop",
+  DOTCHASE: "dotchase",
+  INVADERS: "invaders",
+  DUEL: "duel",
 } as const;
 
 /** Fixed classic Game Boy–style colors for game pieces.
