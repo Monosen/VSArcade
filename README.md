@@ -4,12 +4,52 @@ Retro arcade games inside VS Code, built with a Game Boy-inspired visual style a
 
 VSArcade turns the Explorer sidebar into a tiny arcade cabinet: pick a game, play it in place, pop it out to fullscreen when you want more room, or let auto-play take over for passive fun while you work.
 
+<!-- ════════════════════════════════════════════════════════════════
+     SCREENSHOT SLOT 1 — Hero
+     File to add : media/screenshots/hero.gif
+     Shows       : a short (~5-8s) loop of 2-3 games being played
+     Tip         : ~800px wide, GIF keeps it lively; PNG also works
+     To enable   : delete the placeholder line below and uncomment
+                   the <img> line
+     ════════════════════════════════════════════════════════════════ -->
+<p align="center">
+  <!-- <img src="media/screenshots/hero.gif" alt="VSArcade gameplay" width="800" /> -->
+  <em>🖼️ [ hero screenshot pendiente ] — colocá el archivo en <code>media/screenshots/hero.gif</code></em>
+</p>
+
 ## Why VSArcade
 
 - Play 10 retro games without leaving the editor
 - One shared runtime powers every game — the shell is built once, not per game
 - Move the active game to fullscreen without losing state
 - Every game ships an AI module, so auto-play works across the whole library
+
+<!-- ════════════════════════════════════════════════════════════════
+     SCREENSHOT SLOT 2 — Sidebar vs Fullscreen
+     Files to add : media/screenshots/surface-sidebar.png
+                    media/screenshots/surface-fullscreen.png
+     Shows        : the same game in the Explorer sidebar and in the
+                    centered fullscreen panel
+     Tip          : ~380px wide each so they sit side by side
+     To enable    : delete the placeholder cells and uncomment the
+                    <img> lines
+     ════════════════════════════════════════════════════════════════ -->
+<table>
+  <tr>
+    <td align="center">
+      <!-- <img src="media/screenshots/surface-sidebar.png" alt="Sidebar play" width="380" /> -->
+      <em>🖼️ sidebar →<br/><code>media/screenshots/surface-sidebar.png</code></em>
+    </td>
+    <td align="center">
+      <!-- <img src="media/screenshots/surface-fullscreen.png" alt="Fullscreen play" width="380" /> -->
+      <em>🖼️ fullscreen →<br/><code>media/screenshots/surface-fullscreen.png</code></em>
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Sidebar mode</sub></td>
+    <td align="center"><sub>Fullscreen mode</sub></td>
+  </tr>
+</table>
 
 ## Games
 
@@ -27,6 +67,67 @@ All games render on a 160×144 canvas — the original Game Boy resolution — a
 | DotChase | Pac-Man | Eat pellets in a maze while four ghosts hunt you |
 | Invaders | Space Invaders | Shoot down descending waves of aliens |
 | Duel | Street Fighter | Land high and low hits, block, and drain the opponent's health |
+
+<!-- ════════════════════════════════════════════════════════════════
+     SCREENSHOT SLOT 3 — Game gallery
+     Files to add : one image per game, in media/screenshots/
+                    game-falling-blocks.png   game-brickout.png
+                    game-snakey.png           game-skyhop.png
+                    game-twos.png             game-dotchase.png
+                    game-minehunt.png         game-invaders.png
+                    game-pong.png             game-duel.png
+     Shows        : a representative frame of each game
+     Tip          : square-ish thumbnails, ~150px wide; the native
+                    160×144 canvas already looks great at this size
+     To enable    : per cell, delete the 🖼️ placeholder and uncomment
+                    the <img> line above it
+     ════════════════════════════════════════════════════════════════ -->
+<table>
+  <tr>
+    <td align="center" width="20%">
+      <!-- <img src="media/screenshots/game-falling-blocks.png" width="150" /><br/> -->
+      🖼️<br/><strong>Falling Blocks</strong>
+    </td>
+    <td align="center" width="20%">
+      <!-- <img src="media/screenshots/game-snakey.png" width="150" /><br/> -->
+      🖼️<br/><strong>Snakey</strong>
+    </td>
+    <td align="center" width="20%">
+      <!-- <img src="media/screenshots/game-twos.png" width="150" /><br/> -->
+      🖼️<br/><strong>Twos</strong>
+    </td>
+    <td align="center" width="20%">
+      <!-- <img src="media/screenshots/game-minehunt.png" width="150" /><br/> -->
+      🖼️<br/><strong>MineHunt</strong>
+    </td>
+    <td align="center" width="20%">
+      <!-- <img src="media/screenshots/game-pong.png" width="150" /><br/> -->
+      🖼️<br/><strong>Pong</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="20%">
+      <!-- <img src="media/screenshots/game-brickout.png" width="150" /><br/> -->
+      🖼️<br/><strong>Brickout</strong>
+    </td>
+    <td align="center" width="20%">
+      <!-- <img src="media/screenshots/game-skyhop.png" width="150" /><br/> -->
+      🖼️<br/><strong>Skyhop</strong>
+    </td>
+    <td align="center" width="20%">
+      <!-- <img src="media/screenshots/game-dotchase.png" width="150" /><br/> -->
+      🖼️<br/><strong>DotChase</strong>
+    </td>
+    <td align="center" width="20%">
+      <!-- <img src="media/screenshots/game-invaders.png" width="150" /><br/> -->
+      🖼️<br/><strong>Invaders</strong>
+    </td>
+    <td align="center" width="20%">
+      <!-- <img src="media/screenshots/game-duel.png" width="150" /><br/> -->
+      🖼️<br/><strong>Duel</strong>
+    </td>
+  </tr>
+</table>
 
 ## Quick Start
 
@@ -72,7 +173,7 @@ Press `F5` to open an Extension Development Host and test the extension locally.
 |------|----------------|
 | `src/extension.ts` | Registers commands, views, and the game library |
 | `src/constants.ts` | Command, view, and game identifiers plus the shared palette |
-| `src/types/game.ts` | `IGameDescriptor` contract every game implements |
+| `src/types/game.d.ts` | `IGameDescriptor` contract every game implements |
 | `src/core/GameManager.ts` | Tracks active game selection, runtime snapshot, and surface ownership |
 | `src/core/ArcadeViewProvider.ts` | Builds the sidebar webview shell |
 | `src/core/FullscreenPanel.ts` | Hosts the fullscreen version of the active game |

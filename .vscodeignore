@@ -1,11 +1,23 @@
+# .vscodeignore — everything listed here is EXCLUDED from the .vsix package.
+# Anything NOT listed here ships to end users. Verify with: npx @vscode/vsce ls
+
+# VCS & tooling
 .git/**
 .gitignore
 .atl/**
 .vscode/**
+
+# Dependencies & lockfile
 node_modules/**
+pnpm-lock.yaml
+
+# Source — only the compiled out/ folder ships
 src/**
-SPEC.md
 esbuild.js
 tsconfig.json
-pnpm-lock.yaml
 out/**/*.map
+
+# Maintainer & planning docs — not for end users
+PUBLISHING.md
+Requerimientos.md
+SPEC.md
