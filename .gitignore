@@ -4,4 +4,4 @@ out/
 *.vsix
 *.log
 .DS_Store
-*.atl
+.atl/
