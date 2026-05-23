@@ -40,7 +40,8 @@
         {
           "id": "vsarcade.sidebar",
           "name": "VSArcade",
-          "type": "webview"
+          "type": "webview",
+          "icon": "media/icon.svg"
         }
       ]
     },
