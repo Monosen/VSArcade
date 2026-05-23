@@ -18,6 +18,8 @@ tsconfig.json
 out/**/*.map
 
 # Maintainer & planning docs — not for end users
+ANALYSIS.md
 PUBLISHING.md
 Requerimientos.md
+SCREENSHOTS.md
 SPEC.md
