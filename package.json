@@ -1,5 +1,5 @@
 {
-  "name": "vsarcade",
+  "name": "vsarcade-monosen",
   "displayName": "VSArcade",
   "description": "Game Boy style arcade games inside VS Code",
   "version": "0.0.1",
