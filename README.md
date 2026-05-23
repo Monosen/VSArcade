@@ -37,12 +37,10 @@ VSArcade turns the Explorer sidebar into a tiny arcade cabinet: pick a game, pla
 <table>
   <tr>
     <td align="center">
-      <!-- <img src="media/screenshots/surface-sidebar.png" alt="Sidebar play" width="380" /> -->
-      <em>🖼️ sidebar →<br/><code>media/screenshots/surface-sidebar.png</code></em>
+      <img src="media/screenshots/surface-sidebar.png" alt="Sidebar play" width="380" />
     </td>
     <td align="center">
-      <!-- <img src="media/screenshots/surface-fullscreen.png" alt="Fullscreen play" width="380" /> -->
-      <em>🖼️ fullscreen →<br/><code>media/screenshots/surface-fullscreen.png</code></em>
+      <img src="media/screenshots/surface-fullscreen.png" alt="Fullscreen play" width="380" />
     </td>
   </tr>
   <tr>
