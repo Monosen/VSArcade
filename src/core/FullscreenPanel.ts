@@ -7,6 +7,7 @@ import { GameManager, RuntimeSnapshot } from "./GameManager";
 import {
   createWebviewRuntimeState,
   generateWebviewHtml,
+  PauseSyncHandler,
   RuntimeSyncHandler,
 } from "./ArcadeViewProvider";
 
@@ -27,6 +28,7 @@ export class FullscreenPanel {
     extensionUri: vscode.Uri,
     gameManager: GameManager,
     onRuntimeSync: RuntimeSyncHandler,
+    onPauseSync: PauseSyncHandler,
     onPanelClosed: () => void
   ): FullscreenPanel {
     if (FullscreenPanel.currentPanel) {
@@ -50,6 +52,7 @@ export class FullscreenPanel {
       extensionUri,
       gameManager,
       onRuntimeSync,
+      onPauseSync,
       onPanelClosed
     );
     return FullscreenPanel.currentPanel;
@@ -60,6 +63,7 @@ export class FullscreenPanel {
     extensionUri: vscode.Uri,
     gameManager: GameManager,
     onRuntimeSync: RuntimeSyncHandler,
+    private readonly _onPauseSync: PauseSyncHandler,
     onPanelClosed: () => void
   ) {
     this._panel = panel;
@@ -111,10 +115,7 @@ export class FullscreenPanel {
         this._onRuntimeSync("fullscreen", msg.snapshot as RuntimeSnapshot);
         break;
       case "togglePause":
-        this.postMessage({
-          type: "pauseChanged",
-          paused: this._gameManager.togglePause(),
-        });
+        this._onPauseSync(this._gameManager.togglePause());
         break;
       case "toggleAutoPlay": {
         const autoPlay = this._gameManager.toggleAutoPlay();

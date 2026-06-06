@@ -28,7 +28,6 @@ export class GameManager {
       this.activeGameId = id;
       this.paused = false;
       this.runtimeSnapshot = null;
-      this.activeSurface = "sidebar";
     }
     return descriptor;
   }

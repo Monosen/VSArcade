@@ -6,7 +6,6 @@ import {
   RuntimeSnapshot,
   RuntimeSurface,
 } from "./GameManager";
-import { COMMAND_IDS } from "../constants";
 
 export interface WebviewRuntimeState {
   gameName: string | null;
@@ -20,6 +19,9 @@ export type RuntimeSyncHandler = (
   source: RuntimeSurface,
   snapshot: RuntimeSnapshot,
 ) => void;
+
+export type PauseSyncHandler = (paused: boolean) => void;
+export type ToggleFullscreenHandler = () => void;
 
 export function createWebviewRuntimeState(
   gameManager: GameManager,
@@ -105,6 +107,8 @@ export class ArcadeViewProvider implements vscode.WebviewViewProvider {
     private readonly _extensionUri: vscode.Uri,
     private readonly _gameManager: GameManager,
     private readonly _onRuntimeSync: RuntimeSyncHandler,
+    private readonly _onPauseSync: PauseSyncHandler,
+    private readonly _onToggleFullscreen: ToggleFullscreenHandler,
   ) {}
 
   public resolveWebviewView(
@@ -173,10 +177,7 @@ export class ArcadeViewProvider implements vscode.WebviewViewProvider {
         this._onRuntimeSync("sidebar", msg.snapshot as RuntimeSnapshot);
         break;
       case "togglePause":
-        this.postMessage({
-          type: "pauseChanged",
-          paused: this._gameManager.togglePause(),
-        });
+        this._onPauseSync(this._gameManager.togglePause());
         break;
       case "toggleAutoPlay": {
         const autoPlay = this._gameManager.toggleAutoPlay();
@@ -184,7 +185,7 @@ export class ArcadeViewProvider implements vscode.WebviewViewProvider {
         break;
       }
       case "toggleFullscreen":
-        vscode.commands.executeCommand(COMMAND_IDS.TOGGLE_FULLSCREEN);
+        this._onToggleFullscreen();
         break;
     }
   }

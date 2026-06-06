@@ -51,6 +51,12 @@ export function activate(context: vscode.ExtensionContext): void {
     sidebarProvider.postMessage(targetMessage);
   };
 
+  const syncPause = (paused: boolean): void => {
+    const message = { type: "pauseChanged", paused };
+    sidebarProvider.postMessage(message);
+    FullscreenPanel.currentPanel?.postMessage(message);
+  };
+
   const syncControlTargets = (): void => {
     sidebarProvider.postMessage({
       type: "controlChanged",
@@ -62,10 +68,34 @@ export function activate(context: vscode.ExtensionContext): void {
     });
   };
 
+  const openFullscreen = () => {
+    const activeGame = gameManager.getActiveGame();
+    if (!activeGame) {
+      vscode.window.showWarningMessage(
+        "VSArcade: No game selected. Use 'Select Game' first.",
+      );
+      return;
+    }
+    gameManager.setActiveSurface("fullscreen");
+    FullscreenPanel.createOrShow(
+      context.extensionUri,
+      gameManager,
+      syncRuntimeSnapshot,
+      syncPause,
+      () => {
+        gameManager.setActiveSurface("sidebar");
+        syncControlTargets();
+      },
+    );
+    syncControlTargets();
+  };
+
   sidebarProvider = new ArcadeViewProvider(
     context.extensionUri,
     gameManager,
     syncRuntimeSnapshot,
+    syncPause,
+    openFullscreen,
   );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
@@ -94,6 +124,10 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
       }
 
+      const wasFullscreen =
+        gameManager.getActiveSurface() === "fullscreen" &&
+        FullscreenPanel.currentPanel !== undefined;
+
       const descriptor = gameManager.selectGame(selected.detail);
       if (!descriptor) {
         return;
@@ -102,6 +136,7 @@ export function activate(context: vscode.ExtensionContext): void {
       gameManager.setActiveSurface("sidebar");
       sidebarProvider.refresh();
       FullscreenPanel.currentPanel?.refresh();
+
       const runtimeMessage = {
         type: "gameSelected",
         id: descriptor.id,
@@ -110,9 +145,16 @@ export function activate(context: vscode.ExtensionContext): void {
       };
       sidebarProvider.postMessage(runtimeMessage);
       FullscreenPanel.currentPanel?.postMessage(runtimeMessage);
+
+      if (wasFullscreen) {
+        gameManager.setActiveSurface("fullscreen");
+      }
       syncControlTargets();
-      await vscode.commands.executeCommand("workbench.view.explorer");
-      await vscode.commands.executeCommand(`${VIEW_IDS.SIDEBAR}.focus`);
+
+      if (!wasFullscreen) {
+        await vscode.commands.executeCommand("workbench.view.explorer");
+        await vscode.commands.executeCommand(`${VIEW_IDS.SIDEBAR}.focus`);
+      }
       vscode.window.showInformationMessage(
         `VSArcade: Now playing ${descriptor.name}`,
       );
@@ -121,26 +163,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const toggleFullscreenCommand = vscode.commands.registerCommand(
     COMMAND_IDS.TOGGLE_FULLSCREEN,
-    () => {
-      const activeGame = gameManager.getActiveGame();
-      if (!activeGame) {
-        vscode.window.showWarningMessage(
-          "VSArcade: No game selected. Use 'Select Game' first.",
-        );
-        return;
-      }
-      gameManager.setActiveSurface("fullscreen");
-      FullscreenPanel.createOrShow(
-        context.extensionUri,
-        gameManager,
-        syncRuntimeSnapshot,
-        () => {
-          gameManager.setActiveSurface("sidebar");
-          syncControlTargets();
-        },
-      );
-      syncControlTargets();
-    },
+    openFullscreen,
   );
 
   const toggleAutoPlayCommand = vscode.commands.registerCommand(
