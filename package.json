@@ -82,6 +82,8 @@
     "watch": "node esbuild.js --watch"
   },
   "devDependencies": {
+    "@secretlint/secretlint-rule-no-dotenv": "^10.2.2",
+    "@secretlint/secretlint-rule-preset-recommend": "^10.2.2",
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.74.0",
     "@vscode/vsce": "^3.9.1",

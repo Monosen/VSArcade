@@ -8,6 +8,12 @@ importers:
 
   .:
     devDependencies:
+      '@secretlint/secretlint-rule-no-dotenv':
+        specifier: ^10.2.2
+        version: 10.2.2
+      '@secretlint/secretlint-rule-preset-recommend':
+        specifier: ^10.2.2
+        version: 10.2.2
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.41
