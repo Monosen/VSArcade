@@ -1,7 +1,7 @@
-// VSArcade 2048 — Auto-play planner (1-ply heuristic)
+// VSArcade 2048 — Auto-play planner (2-ply expectimax)
 
 import { GRID_SIZE } from "./constants";
-import { simulateMove } from "./engine";
+import { cloneBoard, simulateMove } from "./engine";
 import { ALL_DIRECTIONS } from "./types";
 import type { Board, Direction } from "./types";
 
@@ -32,20 +32,78 @@ function evaluate(board: Board): number {
       }
     }
   }
-  return snake + empty * 200 + smoothness * 8;
+  return snake * 2 + empty * 250 + smoothness * 12;
 }
 
-export function planNextDirection(board: Board): Direction | null {
-  let best: { dir: Direction; score: number } | null = null;
+interface EmptyCell { r: number; c: number }
+
+function emptyCells(board: Board): EmptyCell[] {
+  const cells: EmptyCell[] = [];
+  for (let r = 0; r < GRID_SIZE; r += 1) {
+    for (let c = 0; c < GRID_SIZE; c += 1) {
+      if (board[r][c] === 0) {
+        cells.push({ r, c });
+      }
+    }
+  }
+  return cells;
+}
+
+function bestMoveScore(board: Board): number {
+  let best = -Infinity;
   for (const dir of ALL_DIRECTIONS) {
     const result = simulateMove(board, dir);
     if (!result.changed) {
       continue;
     }
-    const score = evaluate(result.board) + result.gained * 4;
-    if (!best || score > best.score) {
-      best = { dir, score };
+    const s = evaluate(result.board) + result.gained * 4;
+    if (s > best) {
+      best = s;
     }
   }
+  return best === -Infinity ? evaluate(board) : best;
+}
+
+export function planNextDirection(board: Board): Direction | null {
+  let best: { dir: Direction; score: number } | null = null;
+
+  for (const dir of ALL_DIRECTIONS) {
+    const result = simulateMove(board, dir);
+    if (!result.changed) {
+      continue;
+    }
+
+    const cells = emptyCells(result.board);
+    let lookahead = 0;
+
+    if (cells.length === 0) {
+      lookahead = bestMoveScore(result.board);
+    } else {
+      // Sample up to 6 random tile placements (90% chance of 2, 10% chance of 4)
+      const samples = Math.min(cells.length, 6);
+      const step = Math.max(1, Math.floor(cells.length / samples));
+      let count = 0;
+      for (let i = 0; i < cells.length; i += step) {
+        const cell = cells[i];
+        const next = cloneBoard(result.board);
+        next[cell.r][cell.c] = 2;
+        lookahead += bestMoveScore(next) * 0.9;
+        const next4 = cloneBoard(result.board);
+        next4[cell.r][cell.c] = 4;
+        lookahead += bestMoveScore(next4) * 0.1;
+        count += 1;
+      }
+      if (count > 0) {
+        lookahead /= count;
+      }
+    }
+
+    const totalScore = evaluate(result.board) * 0.4 + result.gained * 4 + lookahead * 0.6;
+
+    if (!best || totalScore > best.score) {
+      best = { dir, score: totalScore };
+    }
+  }
+
   return best?.dir ?? null;
 }
