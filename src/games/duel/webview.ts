@@ -5,7 +5,7 @@ import type { Game, GameApi, Snapshot } from "../../webview/types";
 import { MAX_HEALTH } from "./constants";
 import { DuelEngine } from "./engine";
 import { DuelRenderer } from "./renderer";
-import { decideFighterIntent } from "./ai";
+import { decidePlayerAutoIntent } from "./ai";
 import type { AttackKind, DuelSnapshot, FighterIntent } from "./types";
 
 class DuelGame implements Game {
@@ -34,7 +34,7 @@ class DuelGame implements Game {
 
     let intent: FighterIntent;
     if (this.autoPlay) {
-      intent = decideFighterIntent(this.engine.player, this.engine.opponent);
+      intent = decidePlayerAutoIntent(this.engine.player, this.engine.opponent);
     } else {
       const right = this.api.isKeyDown("ArrowRight") ? 1 : 0;
       const left = this.api.isKeyDown("ArrowLeft") ? 1 : 0;
@@ -89,6 +89,10 @@ class DuelGame implements Game {
 
   isGameOver(): boolean {
     return this.engine.gameOver;
+  }
+
+  isWon(): boolean {
+    return this.engine.won;
   }
 
   restart(): void {

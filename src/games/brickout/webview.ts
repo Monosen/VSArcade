@@ -73,6 +73,10 @@ class BrickoutGame implements Game {
     return this.engine.gameOver;
   }
 
+  isWon(): boolean {
+    return this.engine.won;
+  }
+
   restart(): void {
     this.engine.reset();
     this.publishScore();

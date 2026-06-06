@@ -21,6 +21,9 @@ const FRAME_DELTA_CAP_MS = 50;
 const TEXT_COLOR_PRIMARY = "#f5f5f5";
 const TEXT_COLOR_SECONDARY = "#d8d2ea";
 const OVERLAY_BG = "rgba(10, 10, 18, 0.82)";
+const OVERLAY_WIN_BG = "rgba(4, 18, 4, 0.88)";
+const TEXT_COLOR_WIN_PRIMARY = "#ffd700";
+const TEXT_COLOR_WIN_SECONDARY = "#7eff7e";
 const CANVAS_BG = "#17122b";
 
 let pendingFactory: GameFactory | null = null;
@@ -295,37 +298,80 @@ class Runtime {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (!this.hasSelectedGame || !this.game) {
-      this.drawOverlay("Select a game", "Use Ctrl+Shift+P to start");
+      this.drawOverlay("Select a game", "Use Ctrl+Shift+P to start", false);
       return;
     }
 
     this.game.render();
 
     if (this.game.isGameOver()) {
-      this.drawOverlay("Game Over", "Press Enter to restart");
+      if (this.game.isWon()) {
+        this.drawOverlay("You Win!", "Press Enter to play again", true);
+      } else {
+        this.drawOverlay("Game Over", "Press Enter to restart", false);
+      }
       return;
     }
     if (this.isPaused) {
-      this.drawOverlay("Paused", "Press pause to continue");
+      this.drawOverlay("Paused", "Press pause to continue", false);
     }
   }
 
-  private drawOverlay(message: string, hint: string): void {
-    this.ctx.fillStyle = OVERLAY_BG;
+  private drawOverlay(message: string, hint: string, won: boolean): void {
+    this.ctx.fillStyle = won ? OVERLAY_WIN_BG : OVERLAY_BG;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    const primaryColor = won ? TEXT_COLOR_WIN_PRIMARY : TEXT_COLOR_PRIMARY;
+    const secondaryColor = won ? TEXT_COLOR_WIN_SECONDARY : TEXT_COLOR_SECONDARY;
+
     const messageLines = wrapPixelText(message, this.canvas.width - 16, 2);
     const hintLines = wrapPixelText(hint, this.canvas.width - 16, 1);
     const totalHeight = messageLines.length * 14 + hintLines.length * 7 + 6;
     const startY = Math.max(Math.floor((this.canvas.height - totalHeight) / 2), 16);
-    drawCenteredLines(this.ctx, messageLines, startY, 2, TEXT_COLOR_PRIMARY, this.canvas.width);
+
+    if (won) {
+      this.drawWinDecorations(startY - 10, totalHeight + 20);
+    }
+
+    drawCenteredLines(this.ctx, messageLines, startY, 2, primaryColor, this.canvas.width);
     drawCenteredLines(
       this.ctx,
       hintLines,
       startY + messageLines.length * 14 + 6,
       1,
-      TEXT_COLOR_SECONDARY,
+      secondaryColor,
       this.canvas.width,
     );
+  }
+
+  private drawWinDecorations(centerY: number, height: number): void {
+    const ctx = this.ctx;
+    const w = this.canvas.width;
+    const midY = centerY + height / 2;
+
+    ctx.strokeStyle = "#ffd700";
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.35;
+
+    for (let i = 0; i < 3; i++) {
+      const offset = (i + 1) * 5;
+      ctx.strokeRect(offset, midY - height / 2 - offset, w - offset * 2, height + offset * 2);
+    }
+
+    ctx.globalAlpha = 0.6;
+    const starPositions = [
+      { x: 14, y: midY - 14 },
+      { x: w - 14, y: midY - 14 },
+      { x: 14, y: midY + 14 },
+      { x: w - 14, y: midY + 14 },
+    ];
+    ctx.fillStyle = "#ffd700";
+    for (const pos of starPositions) {
+      ctx.fillRect(pos.x - 1, pos.y - 3, 2, 6);
+      ctx.fillRect(pos.x - 3, pos.y - 1, 6, 2);
+    }
+
+    ctx.globalAlpha = 1;
   }
 }
 

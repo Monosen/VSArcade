@@ -73,6 +73,10 @@ class PongGame implements Game {
     return this.engine.gameOver;
   }
 
+  isWon(): boolean {
+    return false;
+  }
+
   restart(): void {
     this.engine.reset();
     this.publishScore();

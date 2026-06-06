@@ -81,6 +81,10 @@ class SkyhopGame implements Game {
     return this.engine.gameOver;
   }
 
+  isWon(): boolean {
+    return false;
+  }
+
   restart(): void {
     this.engine.reset();
     this.flapKeyWasDown = false;

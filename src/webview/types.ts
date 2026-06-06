@@ -24,6 +24,7 @@ export interface Game {
   buildSnapshot(): Snapshot;
   applySnapshot(snapshot: Snapshot): void;
   isGameOver(): boolean;
+  isWon(): boolean;
   restart(): void;
   dispose(): void;
 }
