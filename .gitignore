@@ -1,9 +1,13 @@
 node_modules/
 .vscode-test/
 out/
+coverage/
 *.vsix
 *.log
+.env
+.env.*
 .DS_Store
 .atl/
+.claude/
 docs/
 PUBLISHING.md
